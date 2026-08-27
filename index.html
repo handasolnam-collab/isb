@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pusan National University | Vibe Coding Showcase</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Chart.js for Interactive Demos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        pnu: {
+                            blue: '#005A9C',
+                            dark: '#003366',
+                            accent: '#0080FF',
+                            gold: '#FFB800'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #005A9C 0%, #0080FF 50%, #7C3AED 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .dark .gradient-text {
+            background: linear-gradient(135deg, #60A5FA 0%, #A78BFA 50%, #F472B6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased min-h-screen transition-colors duration-300">
+
+    <!-- Navigation Bar -->
+    <header class="sticky top-0 z-40 w-full glass-panel border-b border-slate-200/80 dark:border-slate-800/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-pnu-blue text-white flex items-center justify-center font-bold text-lg shadow-md shadow-pnu-blue/20">
+                    PNU
+                </div>
+                <div>
+                    <div class="text-xs font-bold uppercase tracking-wider text-pnu-blue dark:text-pnu-accent">Pusan National University</div>
+                    <div class="text-sm font-semibold text-slate-900 dark:text-white leading-none">Special Lecture: Vibe Coding</div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <a href="#projects" class="hidden sm:inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-pnu-blue dark:text-slate-300 dark:hover:text-white transition">
+                    <i class="fa-solid fa-cubes text-xs"></i> Projects
+                </a>
+                <a href="#vibe-principles" class="hidden sm:inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-pnu-blue dark:text-slate-300 dark:hover:text-white transition">
+                    <i class="fa-solid fa-wand-magic-sparkles text-xs"></i> Core Principles
+                </a>
+                
+                <!-- Explicit Theme Selector (Light / Dark / Auto) -->
+                <div class="inline-flex p-1 bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 rounded-xl text-xs font-semibold" role="group" aria-label="Theme Selector">
+                    <button id="btnLight" onclick="setTheme('light')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+                        <i class="fa-solid fa-sun text-amber-500"></i>
+                        <span class="hidden sm:inline">Light</span>
+                    </button>
+                    <button id="btnDark" onclick="setTheme('dark')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+                        <i class="fa-solid fa-moon text-indigo-400"></i>
+                        <span class="hidden sm:inline">Dark</span>
+                    </button>
+                    <button id="btnSystem" onclick="setTheme('system')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+                        <i class="fa-solid fa-desktop text-slate-400"></i>
+                        <span class="hidden sm:inline">Auto</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden py-16 sm:py-24">
+        <!-- Background Ambient Glow -->
+        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-pnu-blue/15 dark:bg-pnu-accent/15 blur-[120px] rounded-full pointer-events-none"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-pnu-blue/10 dark:bg-pnu-accent/20 text-pnu-blue dark:text-pnu-accent text-xs font-semibold mb-6 border border-pnu-blue/20">
+                <i class="fa-solid fa-bolt text-amber-500"></i> AI-Driven Development Lecture Showcase
+            </div>
+            
+            <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight max-w-4xl mx-auto leading-tight">
+                Accelerating Engineering Ideas via <span class="gradient-text">Vibe Coding</span>
+            </h1>
+            
+            <p class="mt-6 text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
+                Exploring natural language prompting to rapidly build thermal data pipelines, machine learning anomaly detectors, and responsive interactive web applications.
+            </p>
+
+            <!-- Quick Stats Badge Row -->
+            <div class="mt-10 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm font-medium text-slate-600 dark:text-slate-400">
+                <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <i class="fa-solid fa-stopwatch text-pnu-blue dark:text-pnu-accent"></i> 10x Faster Prototyping
+                </div>
+                <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <i class="fa-solid fa-terminal text-purple-500"></i> Conversational Coding
+                </div>
+                <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <i class="fa-solid fa-layer-group text-emerald-500"></i> Full-Stack & Data AI
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="projects" class="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-10">
+            <div>
+                <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+                    Lecture Project Portfolio
+                </h2>
+                <p class="mt-2 text-slate-600 dark:text-slate-400">
+                    Click any card to launch interactive previews and deep-dive technical summaries.
+                </p>
+            </div>
+            <div class="mt-4 md:mt-0 flex gap-2">
+                <button onclick="filterCards('all')" class="filter-btn active-filter px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-pnu-blue text-white shadow-sm transition">All Projects</button>
+                <button onclick="filterCards('data')" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 transition">Data & AI</button>
+                <button onclick="filterCards('web')" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 transition">Web Apps</button>
+            </div>
+        </div>
+
+        <!-- Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+            <!-- CARD 1 -->
+            <div class="project-card group rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-lg shadow-slate-200/50 dark:shadow-none hover:shadow-xl hover:-translate-y-1 transition duration-300 flex flex-col justify-between overflow-hidden" data-category="data">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900">
+                            <i class="fa-solid fa-chart-line"></i> Python / EDA
+                        </span>
+                        <span class="text-xs text-slate-400 font-mono">Module 01</span>
+                    </div>
+
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white group-hover:text-pnu-blue dark:group-hover:text-pnu-accent transition">
+                        Thermal Data Analysis I
+                    </h3>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
+                        Foundations & Rapid EDA Workflow
+                    </p>
+
+                    <p class="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                        Transform raw thermal sensor datasets into clean, actionable insights using AI-driven prompt workflows without writing manual Pandas boilerplate.
+                    </p>
+
+                    <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Tech Stack & Tools</div>
+                        <div class="flex flex-wrap gap-1.5">
+                            <span class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Python</span>
+                            <span class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Pandas</span>
+                            <span class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Matplotlib</span>
+                            <span class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Seaborn</span>
+                        </div>
+                    </div>
+
+                    <blockquote class="mt-5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border-l-2 border-blue-500 text-xs text-slate-600 dark:text-slate-400 italic">
+                        "Focus on describing analytical intent; let AI clean noisy sensor inputs and generate temperature distribution charts instantly."
+                    </blockquote>
+                </div>
+
+                <div class="p-6 pt-0 mt-auto">
+                    <button onclick="openModal('modal1')" class="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-pnu-blue dark:bg-slate-800 dark:hover:bg-pnu-accent text-white text-xs font-semibold flex items-center justify-center gap-2 transition shadow-sm">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Analysis Workbench
+                    </button>
+                </div>
+            </div>
+
+            <!-- CARD 2 -->
+            <div class="project-card group rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-lg shadow-slate-200/50 dark:shadow-none hover:shadow-xl hover:-translate-y-1 transition duration-300 flex flex-col justify-between overflow-hidden" data-category="data">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-900">
+                            <i class="fa-solid fa-microchip"></i> ML / Anomaly Detection
+                        </span>
+                        <span class="text-xs text-slate-400 font-mono">Module 02</span>
+                    </div>
+
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition">
+                        Thermal Data Analysis II
+                    </h3>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
+                        Advanced Modeling & Spatial Heatmaps
+                    </p>
+
+                    <p class="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                        Construct multi-point thermal mapping dashboards and predictive machine learning models to identify high-temperature hardware spikes in real time.
+                    </p>
+
+                    <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Tech Stack & Tools</div>
+                        <div class="flex flex-wrap gap-1.5">
+                            <span class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Scikit-Learn</span>
+                            <span class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Plotly</span>
+                            <span class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Streamlit</span>
+                            <span class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Cursor IDE</span>
+                        </div>
+                    </div>
+
+                    <blockquote class="mt-5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border-l-2 border-purple-500 text-xs text-slate-600 dark:text-slate-400 italic">
+                        "Complex spatial pipelines assemble effortlessly when guiding LLMs through iterative model evaluation prompts."
+                    </blockquote>
+                </div>
+
+                <div class="p-6 pt-0 mt-auto">
+                    <button onclick="openModal('modal2')" class="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-purple-600 dark:bg-slate-800 dark:hover:bg-purple-500 text-white text-xs font-semibold flex items-center justify-center gap-2 transition shadow-sm">
+                        <i class="fa-solid fa-fire-flame-curved"></i> Launch Anomaly Detector
+                    </button>
+                </div>
+            </div>
+
+            <!-- CARD 3 -->
+            <a href="p1.html" class="project-card group rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-lg shadow-slate-200/50 dark:shadow-none hover:shadow-xl hover:-translate-y-1 transition duration-300 flex flex-col justify-between overflow-hidden cursor-pointer block" data-category="web">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900">
+                            <i class="fa-solid fa-cloud-sun"></i> Web App / Live API
+                        </span>
+                        <span class="text-xs text-slate-400 font-mono">Module 03</span>
+                    </div>
+
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
+                        Real-Time Weather App
+                    </h3>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
+                        Concept to Deployment in &lt; 60 Mins
+                    </p>
+
+                    <p class="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                        A responsive glassmorphism web application integrated with weather APIs, fetching real-time ambient metrics and computing custom thermal comfort indices.
+                    </p>
+
+                    <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Tech Stack & Tools</div>
+                        <div class="flex flex-wrap gap-1.5">
+                            <span class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">React / Next.js</span>
+                            <span class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Tailwind CSS</span>
+                            <span class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">OpenWeather API</span>
+                            <span class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">v0 / Bolt</span>
+                        </div>
+                    </div>
+
+                    <blockquote class="mt-5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border-l-2 border-emerald-500 text-xs text-slate-600 dark:text-slate-400 italic">
+                        "UI setup and API integration layers no longer require hours—expressive prompts turn layout ideas into dynamic code."
+                    </blockquote>
+                </div>
+
+                <div class="p-6 pt-0 mt-auto">
+                    <span class="w-full py-2.5 px-4 rounded-xl bg-slate-900 group-hover:bg-emerald-600 dark:bg-slate-800 dark:group-hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-2 transition shadow-sm text-center">
+                        <i class="fa-solid fa-arrow-right-to-bracket"></i> Open Web App (p1.html)
+                    </span>
+                </div>
+            </a>
+
+        </div>
+    </section>
+
+    <!-- Vibe Coding Takeaways Section -->
+    <section id="vibe-principles" class="py-16 bg-slate-100/60 dark:bg-slate-900/60 border-y border-slate-200 dark:border-slate-800 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white">
+                    What is Vibe Coding?
+                </h2>
+                <p class="mt-3 text-slate-600 dark:text-slate-300">
+                    Key methodology taught during the Pusan National University Special Lecture for modern software engineering.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="p-6 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                    <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl font-bold mb-4">
+                        1
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Intent-Driven Prompts</h3>
+                    <p class="mt-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                        Rather than fighting syntax and missing semicolons, engineers clearly articulate high-level analytical logic and UI goals.
+                    </p>
+                </div>
+
+                <div class="p-6 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                    <div class="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl font-bold mb-4">
+                        2
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Iterative Refinement</h3>
+                    <p class="mt-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                        Continuous feedback loops with AI coding assistants (Cursor, v0, Claude) allow seamless bug fixing and instant styling tweaks.
+                    </p>
+                </div>
+
+                <div class="p-6 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold mb-4">
+                        3
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Rapid Zero-to-One</h3>
+                    <p class="mt-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                        Complex data cleaning, ML model pipelines, and API integrations are operational in minutes instead of days.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MODAL 1: Thermal Data Analysis 1 -->
+    <div id="modal1" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="relative bg-white dark:bg-slate-900 rounded-3xl max-w-3xl w-full p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('modal1')" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 dark:hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 mb-3">
+                Thermal Data Analysis I
+            </span>
+
+            <h3 class="text-2xl font-bold text-slate-900 dark:text-white">Interactive EDA & Sensor Cleaning</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Simulated output from AI prompt: "Clean sensor outliers & plot hourly thermal drift."</p>
+
+            <!-- Chart Workbench Demo -->
+            <div class="mt-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-xs font-mono font-semibold text-slate-500">Output: Sensor_Temp_Log_Cleaning.png</span>
+                    <button onclick="regenThermal1Chart()" class="text-xs px-2.5 py-1 rounded bg-blue-500 text-white font-medium hover:bg-blue-600 transition">
+                        <i class="fa-solid fa-arrows-rotate"></i> Re-simulate EDA
+                    </button>
+                </div>
+                <div class="h-64">
+                    <canvas id="chartThermal1"></canvas>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white">Key Accomplishments</h4>
+                <ul class="mt-2 text-xs text-slate-600 dark:text-slate-300 space-y-1.5 list-disc list-inside">
+                    <li>Automated removal of false zero readings & electromagnetic interference spikes.</li>
+                    <li>Instant generation of Seaborn-styled rolling median graphs and standard deviation bands.</li>
+                    <li>Zero manual syntax debugging required for Pandas DataFrame reshape operations.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Thermal Data Analysis 2 -->
+    <div id="modal2" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="relative bg-white dark:bg-slate-900 rounded-3xl max-w-3xl w-full p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('modal2')" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 dark:hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 mb-3">
+                Thermal Data Analysis II
+            </span>
+
+            <h3 class="text-2xl font-bold text-slate-900 dark:text-white">Predictive Thermal Anomaly Detection</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Multi-sensor hardware monitor with interactive threshold alarm simulation.</p>
+
+            <div class="mt-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                <div class="flex items-center justify-between mb-3">
+                    <label class="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Sensor Warning Threshold (<span id="thresholdVal">75</span>°C):
+                    </label>
+                    <span id="anomalyStatus" class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                        Status: Normal Operation
+                    </span>
+                </div>
+                <input type="range" id="thresholdSlider" min="50" max="95" value="75" class="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-purple-600" oninput="updateAnomalyChart(this.value)">
+
+                <div class="h-64 mt-4">
+                    <canvas id="chartThermal2"></canvas>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white">Key Features Built</h4>
+                <ul class="mt-2 text-xs text-slate-600 dark:text-slate-300 space-y-1.5 list-disc list-inside">
+                    <li>Isolation Forest machine learning model for automatic outlier flag identification.</li>
+                    <li>Interactive Streamlit dashboard structure requested via prompt engineering.</li>
+                    <li>Real-time component thermal dissipation forecasting algorithms.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Weather App -->
+    <div id="modal3" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="relative bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-2xl">
+            <button onclick="closeModal('modal3')" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 dark:hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 mb-3">
+                Live App Interactive Widget
+            </span>
+
+            <h3 class="text-2xl font-bold text-slate-900 dark:text-white">Pusan Weather & Thermal Index</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Dynamic React/Tailwind widget built in the lecture.</p>
+
+            <!-- Weather Widget Simulated App -->
+            <div class="mt-6 p-6 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg relative overflow-hidden">
+                <div class="absolute -right-8 -bottom-8 opacity-10 text-9xl">
+                    <i class="fa-solid fa-sun"></i>
+                </div>
+
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="text-xs font-medium uppercase tracking-wider text-blue-100">Location</div>
+                        <div class="text-2xl font-bold">Busan (PNU Campus)</div>
+                        <div class="text-xs text-blue-200 mt-0.5" id="weatherTime">Live Telemetry</div>
+                    </div>
+                    <span class="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold" id="weatherCondition">
+                        Sunny
+                    </span>
+                </div>
+
+                <div class="mt-6 flex items-baseline justify-between">
+                    <div>
+                        <span class="text-5xl font-extrabold" id="weatherTemp">24</span><span class="text-2xl font-light">°C</span>
+                    </div>
+                    <div class="text-right text-xs text-blue-100 space-y-1">
+                        <div>Humidity: <span class="font-bold text-white">62%</span></div>
+                        <div>Wind: <span class="font-bold text-white">3.8 m/s</span></div>
+                        <div>Thermal Index: <span class="font-bold text-emerald-300" id="thermalIndexText">Optimal (Comfortable)</span></div>
+                    </div>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-white/20 flex justify-between gap-2 text-center text-xs">
+                    <button onclick="changeWeather('busan')" class="flex-1 py-1.5 rounded bg-white/20 hover:bg-white/30 transition">Busan Campus</button>
+                    <button onclick="changeWeather('seoul')" class="flex-1 py-1.5 rounded bg-white/10 hover:bg-white/20 transition">Seoul</button>
+                    <button onclick="changeWeather('jeju')" class="flex-1 py-1.5 rounded bg-white/10 hover:bg-white/20 transition">Jeju</button>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white">Vibe Coding Tech Features</h4>
+                <ul class="mt-2 text-xs text-slate-600 dark:text-slate-300 space-y-1.5 list-disc list-inside">
+                    <li>Asynchronous OpenWeather API data fetching with failover mock states.</li>
+                    <li>Custom mathematical function mapping weather data to thermal human comfort scores.</li>
+                    <li>Fully dynamic Tailwind glassmorphism design created in single prompts.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-8 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>Pusan National University • Special Lecture on Vibe Coding Portfolio</p>
+            <p class="mt-1">Designed & Generated with AI Conversational Prompting</p>
+        </div>
+    </footer>
+
+    <script>
+        // Theme Selection and LocalStorage Logic
+        function setTheme(mode) {
+            if (mode === 'light') {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('pnu_theme', 'light');
+            } else if (mode === 'dark') {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('pnu_theme', 'dark');
+            } else {
+                localStorage.removeItem('pnu_theme');
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            }
+            updateThemeUI(mode);
+        }
+
+        function updateThemeUI(selectedMode) {
+            const activeStyle = "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-bold";
+            const inactiveStyle = "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+
+            ['light', 'dark', 'system'].forEach(mode => {
+                const btn = document.getElementById(`btn${mode.charAt(0).toUpperCase() + mode.slice(1)}`);
+                if (btn) {
+                    btn.className = `flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${mode === selectedMode ? activeStyle : inactiveStyle}`;
+                }
+            });
+        }
+
+        // Initialize saved theme or system preference
+        (function initTheme() {
+            const savedTheme = localStorage.getItem('pnu_theme') || 'system';
+            if (savedTheme === 'dark' || (savedTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+            updateThemeUI(savedTheme);
+        })();
+
+        // Filter cards logic
+        function filterCards(cat) {
+            const cards = document.querySelectorAll('.project-card');
+            const btns = document.querySelectorAll('.filter-btn');
+
+            btns.forEach(btn => {
+                btn.classList.remove('bg-pnu-blue', 'text-white');
+                btn.classList.add('bg-white', 'dark:bg-slate-900', 'text-slate-600', 'dark:text-slate-300');
+            });
+            event.target.classList.remove('bg-white', 'dark:bg-slate-900', 'text-slate-600', 'dark:text-slate-300');
+            event.target.classList.add('bg-pnu-blue', 'text-white');
+
+            cards.forEach(card => {
+                if (cat === 'all' || card.getAttribute('data-category') === cat) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Modal Controllers
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            if(id === 'modal1') initThermal1Chart();
+            if(id === 'modal2') initThermal2Chart();
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        // CHART 1: Thermal Data Analysis 1 EDA Simulator
+        let chart1Instance = null;
+        function initThermal1Chart() {
+            if(chart1Instance) return;
+            const ctx = document.getElementById('chartThermal1').getContext('2d');
+            
+            const rawData = [22, 23, 22.5, 48, 23.1, 24, 25.2, 26, 28, 29.5, 31, 30.2, 28.5, 26, 24];
+            const cleanedData = [22, 23, 22.5, 23.0, 23.1, 24, 25.2, 26, 28, 29.5, 31, 30.2, 28.5, 26, 24];
+            const labels = ['08:00', '09:00', '10:00', '11:00 (Spike)', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00'];
+
+            chart1Instance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Raw Sensor Input (With Noise Spike)',
+                            data: rawData,
+                            borderColor: '#EF4444',
+                            borderDash: [5, 5],
+                            tension: 0.2,
+                            fill: false
+                        },
+                        {
+                            label: 'Cleaned Vibe Coding Output',
+                            data: cleanedData,
+                            borderColor: '#0080FF',
+                            backgroundColor: 'rgba(0, 128, 255, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+        }
+
+        function regenThermal1Chart() {
+            if(!chart1Instance) return;
+            chart1Instance.data.datasets[1].data = chart1Instance.data.datasets[1].data.map(val => val + (Math.random() * 1.5 - 0.75));
+            chart1Instance.update();
+        }
+
+        // CHART 2: Thermal Data Analysis 2 Anomaly Detection
+        let chart2Instance = null;
+        function initThermal2Chart() {
+            if(chart2Instance) return;
+            const ctx = document.getElementById('chartThermal2').getContext('2d');
+            
+            const temps = [62, 64, 63, 68, 72, 79, 84, 88, 76, 70, 66, 65];
+            const labels = ['Point A', 'Point B', 'Point C', 'Point D', 'Point E', 'Point F', 'Point G', 'Point H', 'Point I', 'Point J', 'Point K', 'Point L'];
+
+            chart2Instance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Component Temperature (°C)',
+                        data: temps,
+                        backgroundColor: temps.map(t => t > 75 ? '#EF4444' : '#8B5CF6'),
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function updateAnomalyChart(thresh) {
+            document.getElementById('thresholdVal').innerText = thresh;
+            if(!chart2Instance) return;
+            
+            const statusBox = document.getElementById('anomalyStatus');
+            const data = chart2Instance.data.datasets[0].data;
+            const hasAnomaly = data.some(val => val > thresh);
+
+            chart2Instance.data.datasets[0].backgroundColor = data.map(val => val > thresh ? '#EF4444' : '#8B5CF6');
+            chart2Instance.update();
+
+            if (hasAnomaly) {
+                statusBox.innerText = '⚠️ Warning: Thermal Anomaly Detected!';
+                statusBox.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300';
+            } else {
+                statusBox.innerText = 'Status: Normal Operation';
+                statusBox.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300';
+            }
+        }
+
+        // Weather Interactive Data Simulator
+        const weatherData = {
+            busan: { city: 'Busan (PNU Campus)', temp: 24, cond: 'Sunny', hum: '62%', wind: '3.8 m/s', thermal: 'Optimal (Comfortable)' },
+            seoul: { city: 'Seoul Campus', temp: 19, cond: 'Partly Cloudy', hum: '55%', wind: '4.2 m/s', thermal: 'Mild' },
+            jeju: { city: 'Jeju Island', temp: 27, cond: 'Warm Humidity', hum: '78%', wind: '5.1 m/s', thermal: 'Elevated Heat Index' }
+        };
+
+        function changeWeather(key) {
+            const data = weatherData[key];
+            document.getElementById('weatherTemp').innerText = data.temp;
+            document.getElementById('weatherCondition').innerText = data.cond;
+            document.getElementById('thermalIndexText').innerText = data.thermal;
+        }
+    </script>
+</body>
+</html>
