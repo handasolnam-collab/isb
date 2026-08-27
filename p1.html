@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Busan Beach Weather & Ocean Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS & JS for Interactive Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        ocean: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .wave-bg {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #0f172a 100%);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans flex flex-col">
+
+    <header class="wave-bg text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white/20 p-2.5 rounded-2xl backdrop-blur-md">
+                    <i class="fa-solid fa-water text-2xl text-cyan-300"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight">Busan Beach Weather</h1>
+                    <p class="text-xs text-cyan-100 font-medium">Real-time Weather & Wave Conditions via Open-Meteo</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <button id="refreshBtn" onclick="fetchBeachData(true)" class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition text-xs sm:text-sm font-medium flex items-center gap-2 border border-white/20 backdrop-blur-sm">
+                    <i class="fa-solid fa-rotate-right" id="refreshIcon"></i>
+                    <span>Refresh Data</span>
+                </button>
+                <button onclick="toggleCompareModal()" class="px-3.5 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-900 transition text-xs sm:text-sm font-semibold shadow-md flex items-center gap-2">
+                    <i class="fa-solid fa-code-compare"></i>
+                    <span>Compare Beaches</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+
+        <!-- Beach Quick Selector Scroll -->
+        <section class="space-y-2">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Select Beach</h2>
+                <div class="flex items-center gap-2 text-xs text-slate-500">
+                    <i class="fa-solid fa-location-dot text-rose-500"></i> Busan Coastline
+                </div>
+            </div>
+            <div id="beachNav" class="flex gap-2.5 overflow-x-auto custom-scrollbar pb-2 pt-1">
+                <!-- Beach buttons generated dynamically -->
+            </div>
+        </section>
+
+        <!-- Main Dashboard View -->
+        <div id="dashboardView" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Left 2 Columns: Spotlight & Hourly Chart -->
+            <div class="lg:col-span-2 space-y-6">
+
+                <div id="spotlightCard" class="relative overflow-hidden rounded-3xl wave-bg text-white p-6 sm:p-8 shadow-xl min-h-[300px] flex flex-col justify-between">
+                    <!-- Background ambient glow -->
+                    <div class="absolute -right-10 -bottom-10 w-60 h-60 bg-cyan-400/20 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <!-- Top Row: Beach Info & Badges -->
+                    <div class="flex flex-wrap items-start justify-between gap-4 z-10">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span id="beachKorean" class="text-sm font-semibold bg-white/20 px-3 py-1 rounded-full backdrop-blur-md">해운대해수욕장</span>
+                                <span id="favBadge" onclick="toggleFavoriteCurrent()" class="cursor-pointer text-amber-300 hover:scale-110 transition">
+                                    <i class="fa-regular fa-star text-lg" id="favStarIcon"></i>
+                                </span>
+                            </div>
+                            <h2 id="beachName" class="text-3xl sm:text-4xl font-extrabold mt-2 tracking-tight">Haeundae Beach</h2>
+                            <p id="beachDesc" class="text-sm text-slate-200 mt-1 max-w-md">Busan's iconic white sand beach, vibrant waterfront atmosphere.</p>
+                        </div>
+                        <div class="text-right flex flex-col items-end">
+                            <div id="activityBadge" class="px-3.5 py-1.5 rounded-2xl bg-emerald-500/30 border border-emerald-400/40 backdrop-blur-md text-emerald-200 text-xs font-bold flex items-center gap-2">
+                                <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                                <span id="safetyStatus">Good for Swimming</span>
+                            </div>
+                            <span id="lastUpdated" class="text-[11px] text-slate-300 mt-2">Updated just now</span>
+                        </div>
+                    </div>
+
+                    <!-- Middle Row: Temperature & Primary Condition -->
+                    <div class="my-6 flex flex-wrap items-center justify-between gap-6 z-10">
+                        <div class="flex items-center gap-4">
+                            <div id="weatherIconLarge" class="text-5xl sm:text-6xl text-amber-300 animate-float">
+                                <i class="fa-solid fa-sun"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-baseline gap-2">
+                                    <span id="currentTemp" class="text-5xl sm:text-6xl font-black tracking-tight">--</span>
+                                    <span class="text-2xl font-light text-cyan-200">°C</span>
+                                </div>
+                                <p id="weatherCondition" class="text-base font-medium text-cyan-100">Loading weather...</p>
+                            </div>
+                        </div>
+
+                        <!-- Marine Quick Highlights -->
+                        <div class="grid grid-cols-2 gap-3 bg-white/10 p-3.5 rounded-2xl backdrop-blur-md border border-white/10 text-xs min-w-[200px]">
+                            <div>
+                                <span class="text-slate-300 block text-[11px]">Wave Height</span>
+                                <span id="waveHeightHighlight" class="font-bold text-sm text-cyan-200">-- m</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-300 block text-[11px]">Wave Period</span>
+                                <span id="wavePeriodHighlight" class="font-bold text-sm text-cyan-200">-- s</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-300 block text-[11px]">Wind Speed</span>
+                                <span id="windSpeedHighlight" class="font-bold text-sm text-cyan-200">-- km/h</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-300 block text-[11px]">UV Index</span>
+                                <span id="uvHighlight" class="font-bold text-sm text-cyan-200">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Row: Activity Score Bar -->
+                    <div class="pt-4 border-t border-white/10 grid grid-cols-3 gap-2 text-center text-xs z-10">
+                        <div class="bg-black/20 p-2 rounded-xl">
+                            <span class="text-slate-300 block text-[10px] uppercase font-bold">Swim Index</span>
+                            <span id="swimScore" class="font-extrabold text-sm text-emerald-300">--</span>
+                        </div>
+                        <div class="bg-black/20 p-2 rounded-xl">
+                            <span class="text-slate-300 block text-[10px] uppercase font-bold">Surf Index</span>
+                            <span id="surfScore" class="font-extrabold text-sm text-cyan-300">--</span>
+                        </div>
+                        <div class="bg-black/20 p-2 rounded-xl">
+                            <span class="text-slate-300 block text-[10px] uppercase font-bold">Sunset Rating</span>
+                            <span id="sunsetScore" class="font-extrabold text-sm text-amber-300">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <!-- Air Temp & Feels Like -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+                        <div class="flex items-center justify-between text-slate-400">
+                            <span class="text-xs font-semibold uppercase">Feels Like</span>
+                            <i class="fa-solid fa-temperature-half text-amber-500"></i>
+                        </div>
+                        <div class="mt-3">
+                            <span id="apparentTemp" class="text-2xl font-bold text-slate-800">--°C</span>
+                            <p id="tempDiff" class="text-[11px] text-slate-500 mt-0.5">Humidity effect</p>
+                        </div>
+                    </div>
+
+                    <!-- Wind & Direction -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+                        <div class="flex items-center justify-between text-slate-400">
+                            <span class="text-xs font-semibold uppercase">Wind Speed</span>
+                            <i class="fa-solid fa-wind text-cyan-500"></i>
+                        </div>
+                        <div class="mt-3">
+                            <span id="windSpeed" class="text-2xl font-bold text-slate-800">--</span>
+                            <p id="windDirection" class="text-[11px] text-slate-500 mt-0.5">Direction: --</p>
+                        </div>
+                    </div>
+
+                    <!-- Humidity & Rain -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+                        <div class="flex items-center justify-between text-slate-400">
+                            <span class="text-xs font-semibold uppercase">Precipitation</span>
+                            <i class="fa-solid fa-cloud-showers-heavy text-blue-500"></i>
+                        </div>
+                        <div class="mt-3">
+                            <span id="rainAmount" class="text-2xl font-bold text-slate-800">-- mm</span>
+                            <p id="humidityLevel" class="text-[11px] text-slate-500 mt-0.5">Humidity: --%</p>
+                        </div>
+                    </div>
+
+                    <!-- Wave & Swell -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+                        <div class="flex items-center justify-between text-slate-400">
+                            <span class="text-xs font-semibold uppercase">Marine Waves</span>
+                            <i class="fa-solid fa-water text-indigo-500"></i>
+                        </div>
+                        <div class="mt-3">
+                            <span id="waveHeight" class="text-2xl font-bold text-slate-800">-- m</span>
+                            <p id="wavePeriod" class="text-[11px] text-slate-500 mt-0.5">Period: --s</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base">24-Hour Ocean & Weather Forecast</h3>
+                            <p class="text-xs text-slate-500">Hourly trend of temperature (°C) and wave height (m)</p>
+                        </div>
+                        <div class="flex items-center gap-3 text-xs font-medium">
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span> Temp (°C)</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Wave (m)</span>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Chart -->
+                    <div class="relative w-full h-48 overflow-x-auto custom-scrollbar">
+                        <canvas id="hourlyCanvas" class="w-full h-full min-w-[600px]"></canvas>
+                    </div>
+
+                    <!-- Horizontal Hourly Cards Slider -->
+                    <div id="hourlySlider" class="flex gap-3 overflow-x-auto custom-scrollbar pt-2 pb-1">
+                        <!-- Hourly forecast items dynamically injected -->
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="space-y-6">
+
+                <!-- 7-Day Forecast Card -->
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-slate-800 text-base">7-Day Beach Forecast</h3>
+                        <i class="fa-regular fa-calendar-days text-slate-400"></i>
+                    </div>
+
+                    <div id="dailyForecastList" class="space-y-3">
+                        <!-- Dynamic 7 day rows -->
+                        <div class="animate-pulse space-y-2">
+                            <div class="h-10 bg-slate-100 rounded-xl"></div>
+                            <div class="h-10 bg-slate-100 rounded-xl"></div>
+                            <div class="h-10 bg-slate-100 rounded-xl"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Busan Coastline Map -->
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                                <i class="fa-solid fa-map-location-dot text-rose-500"></i>
+                                Busan Coastline Map
+                            </h3>
+                            <p class="text-xs text-slate-500">Click markers to view beach weather & switch active beach</p>
+                        </div>
+                    </div>
+                    <div id="beachMap" class="w-full h-64 sm:h-72 rounded-2xl border border-slate-200 z-10 overflow-hidden shadow-inner"></div>
+                </div>
+
+                <!-- Beach Information & Best Features -->
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4">
+                    <h3 class="font-bold text-slate-800 text-base">Beach Overview & Tips</h3>
+                    <div id="beachMetaInfo" class="space-y-3 text-xs text-slate-600">
+                        <p id="metaDescription" class="leading-relaxed">Select a beach to read specific features and recommendations.</p>
+                        
+                        <div class="pt-3 border-t border-slate-100 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Best Known For:</span>
+                                <span id="metaSpecialty" class="font-semibold text-slate-700">--</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Water Depth / Wave Type:</span>
+                                <span id="metaWaveType" class="font-semibold text-slate-700">--</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Coordinates:</span>
+                                <span id="metaCoords" class="font-mono text-slate-500">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Open-Meteo Attribution Card -->
+                <div class="bg-slate-100 p-4 rounded-2xl text-xs text-slate-500 flex items-center justify-between">
+                    <div>
+                        <p class="font-semibold text-slate-700">Powered by Open-Meteo APIs</p>
+                        <p class="text-[11px] text-slate-500">Free Open-Source Weather & Marine Data</p>
+                    </div>
+                    <a href="https://open-meteo.com/" target="_blank" class="px-2.5 py-1.5 bg-white rounded-lg shadow-sm border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition">
+                        API Info <i class="fa-solid fa-arrow-up-right-from-square text-[10px] ml-1"></i>
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <div id="compareModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+            <div class="p-6 wave-bg text-white flex items-center justify-between">
+                <div>
+                    <h3 class="text-xl font-bold">Busan Beaches Live Comparison</h3>
+                    <p class="text-xs text-cyan-100 mt-0.5">Compare weather, wave conditions, and swim suitability across all major beaches</p>
+                </div>
+                <button onclick="toggleCompareModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-sm transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600 border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider">
+                                <th class="p-3">Beach Name</th>
+                                <th class="p-3">Temp</th>
+                                <th class="p-3">Condition</th>
+                                <th class="p-3">Wave Height</th>
+                                <th class="p-3">Wind</th>
+                                <th class="p-3">Swim Safety</th>
+                                <th class="p-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="compareTableBody" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BUSAN_BEACHES = [
+            {
+                id: 'haeundae',
+                name: 'Haeundae Beach',
+                korean: '해운대해수욕장',
+                lat: 35.1587,
+                lng: 129.1604,
+                placeId: 'ChIJXwf-DlyNaDURmKxjwdWxY5k',
+                desc: "Busan's premier white sand beach with high-rise views, vibrant boardwalk, and luxury coastal amenities.",
+                specialty: 'Swimming, Beach Events, Nightscapes',
+                waveType: 'Moderate, Gentle Slope',
+            },
+            {
+                id: 'gwangalli',
+                name: 'Gwangalli Beach',
+                korean: '광안리해수욕장',
+                lat: 35.1532,
+                lng: 129.1189,
+                placeId: 'ChIJxw7HJy_taDUR-xaSTeHwbf8',
+                desc: 'Famous for spectacular Gwangan Bridge views, SUP paddleboarding, drone light shows, and waterfront cafes.',
+                specialty: 'Paddleboarding, Night Views, Drone Shows',
+                waveType: 'Calm, Sheltered Bay',
+            },
+            {
+                id: 'songdo',
+                name: 'Songdo Beach',
+                korean: '송도해수욕장',
+                lat: 35.0764,
+                lng: 129.0232,
+                placeId: 'ChIJ07EMAkXoaDURr8d2uGJp5pk',
+                desc: "Korea's first public beach, famous for the marine cable car crossing over ocean waters and skywalk trails.",
+                specialty: 'Cable Car, Coastal Skywalk, Family Swimming',
+                waveType: 'Low Waves, Protected Cove',
+            },
+            {
+                id: 'dadaepo',
+                name: 'Dadaepo Beach',
+                korean: '다대포해수욕장',
+                lat: 35.0469,
+                lng: 128.9664,
+                placeId: 'ChIJR_w0WhPdaDURllEsxhEIA90',
+                desc: 'Renowned for vast golden tidal flats, magical sunset reflections, shallow waters, and kite surfing.',
+                specialty: 'Sunsets, Shallow Water Play, Sunset Surfing',
+                waveType: 'Shallow Waters, Gentle Swell',
+            },
+            {
+                id: 'songjeong',
+                name: 'Songjeong Beach',
+                korean: '송정해수욕장',
+                lat: 35.1786,
+                lng: 129.1997,
+                placeId: 'ChIJAeJVSEyMaDURJSl7wzo7GTI',
+                desc: "The undisputed surfing capital of Busan, featuring consistent ocean swells and vibrant surf academies.",
+                specialty: 'Surfing, Beginner Surf Lessons, Youth Vibe',
+                waveType: 'Consistent Beach Breaks',
+            },
+            {
+                id: 'ilgwang',
+                name: 'Ilgwang Beach',
+                korean: '일광해수욕장',
+                lat: 35.2603,
+                lng: 129.2335,
+                placeId: 'ChIJyZBjOFSPaDURKWR7rMB3f9I',
+                desc: 'A tranquil curved bay with soft sands and calm water, ideal for quiet family relaxation and sea walks.',
+                specialty: 'Family Picnics, Quiet Swimming, Seafood',
+                waveType: 'Very Gentle, Protected Waters',
+            },
+            {
+                id: 'imrang',
+                name: 'Imrang Beach',
+                korean: '임랑해수욕장',
+                lat: 35.3183,
+                lng: 129.2644,
+                placeId: 'ChIJjSWn7zqHaDURs62cXLwiFJc',
+                desc: 'Peaceful northern Busan coast where green pine forests meet clear blue ocean waves.',
+                specialty: 'Camping Vibes, Scenic Cafes, Solitude',
+                waveType: 'Moderate Open Sea Swell',
+            }
+        ];
+
+        // Global State variables
+        let selectedBeach = BUSAN_BEACHES[0];
+        let beachDataCache = {};
+        let favorites = JSON.parse(localStorage.getItem('busan_fav_beaches') || '[]');
+        let mapInstance = null;
+        let mapMarkers = {};
+
+        function getWeatherInfo(code) {
+            switch (code) {
+                case 0:
+                    return { desc: 'Clear Sky', icon: 'fa-sun', color: 'text-amber-400' };
+                case 1:
+                    return { desc: 'Mainly Clear', icon: 'fa-sun-plant-wilt', color: 'text-amber-300' };
+                case 2:
+                    return { desc: 'Partly Cloudy', icon: 'fa-cloud-sun', color: 'text-sky-400' };
+                case 3:
+                    return { desc: 'Overcast', icon: 'fa-cloud', color: 'text-slate-400' };
+                case 45:
+                case 48:
+                    return { desc: 'Foggy', icon: 'fa-smog', color: 'text-slate-300' };
+                case 51:
+                case 53:
+                case 55:
+                    return { desc: 'Light Drizzle', icon: 'fa-cloud-rain', color: 'text-blue-300' };
+                case 61:
+                case 63:
+                case 65:
+                    return { desc: 'Rain', icon: 'fa-cloud-showers-heavy', color: 'text-blue-500' };
+                case 71:
+                case 73:
+                case 75:
+                    return { desc: 'Snow', icon: 'fa-snowflake', color: 'text-cyan-200' };
+                case 80:
+                case 81:
+                case 82:
+                    return { desc: 'Rain Showers', icon: 'fa-cloud-sun-rain', color: 'text-blue-400' };
+                case 95:
+                case 96:
+                case 99:
+                    return { desc: 'Thunderstorm', icon: 'fa-bolt', color: 'text-yellow-400' };
+                default:
+                    return { desc: 'Clear', icon: 'fa-sun', color: 'text-amber-400' };
+            }
+        }
+
+        // Explicitly declare fetchOpenMeteoData globally
+        async function fetchOpenMeteoData(lat, lng) {
+            const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,weather_code,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia%2FTokyo`;
+            const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&current=wave_height,wave_period,wave_direction&hourly=wave_height,wave_period&timezone=Asia%2FTokyo`;
+
+            try {
+                const [weatherRes, marineRes] = await Promise.all([
+                    fetch(weatherUrl),
+                    fetch(marineUrl).catch(() => null)
+                ]);
+
+                if (!weatherRes.ok) {
+                    throw new Error(`Weather API returned status: ${weatherRes.status}`);
+                }
+
+                const weatherData = await weatherRes.json();
+                let marineData = null;
+
+                if (marineRes && marineRes.ok) {
+                    marineData = await marineRes.json();
+                }
+
+                return {
+                    weather: weatherData,
+                    marine: marineData
+                };
+            } catch (err) {
+                console.error('API Fetch Error:', err);
+                throw err;
+            }
+        }
+        window.fetchOpenMeteoData = fetchOpenMeteoData;
+
+        function initMap() {
+            if (mapInstance) return;
+
+            // Center map around Busan coastal area
+            mapInstance = L.map('beachMap', {
+                zoomControl: true,
+                scrollWheelZoom: false
+            }).setView([35.15, 129.14], 11);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(mapInstance);
+
+            // Create markers for each beach
+            BUSAN_BEACHES.forEach(beach => {
+                const marker = L.marker([beach.lat, beach.lng]).addTo(mapInstance);
+                
+                // Custom popup HTML
+                const popupContent = `
+                    <div class="p-1 max-w-[180px] font-sans">
+                        <h4 class="font-bold text-slate-800 text-sm">${beach.name}</h4>
+                        <p class="text-[11px] text-slate-500 mb-1.5">${beach.korean}</p>
+                        <div id="map-pop-${beach.id}" class="text-xs text-slate-600 mb-2">
+                            <i class="fa-solid fa-spinner fa-spin text-cyan-500"></i> Loading weather...
+                        </div>
+                        <button onclick="selectBeach('${beach.id}')" class="w-full py-1 px-2 text-[11px] font-semibold bg-cyan-600 text-white rounded-lg shadow hover:bg-cyan-700 transition">
+                            View Details
+                        </button>
+                    </div>
+                `;
+
+                marker.bindPopup(popupContent);
+                mapMarkers[beach.id] = marker;
+            });
+        }
+
+        function updateMapPopupData(beachId, data) {
+            const container = document.getElementById(`map-pop-${beachId}`);
+            if (!container || !data) return;
+
+            const temp = Math.round(data.weather.current.temperature_2m);
+            const wave = data.marine?.current?.wave_height ? `${data.marine.current.wave_height.toFixed(1)}m` : '0.4m';
+            const code = data.weather.current.weather_code;
+            const info = getWeatherInfo(code);
+
+            container.innerHTML = `
+                <div class="flex items-center justify-between font-semibold text-slate-700 mb-0.5">
+                    <span>${temp}°C</span>
+                    <span class="text-cyan-600"><i class="fa-solid fa-water text-[10px]"></i> ${wave}</span>
+                </div>
+                <div class="text-[11px] text-slate-500 flex items-center gap-1">
+                    <i class="fa-solid ${info.icon}"></i> ${info.desc}
+                </div>
+            `;
+        }
+
+        function renderBeachNav() {
+            const nav = document.getElementById('beachNav');
+            nav.innerHTML = BUSAN_BEACHES.map(beach => {
+                const isSelected = beach.id === selectedBeach.id;
+                const isFav = favorites.includes(beach.id);
+                return `
+                    <button onclick="selectBeach('${beach.id}')" class="px-4 py-2.5 rounded-2xl whitespace-nowrap text-xs font-semibold transition-all duration-200 flex items-center gap-2 ${
+                        isSelected 
+                        ? 'bg-slate-800 text-white shadow-md ring-2 ring-cyan-400/50' 
+                        : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80 shadow-sm'
+                    }">
+                        ${isFav ? '<i class="fa-solid fa-star text-amber-400 text-[11px]"></i>' : ''}
+                        <span>${beach.name}</span>
+                        <span class="text-[10px] opacity-60">(${beach.korean})</span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        async function selectBeach(beachId) {
+            selectedBeach = BUSAN_BEACHES.find(b => b.id === beachId) || BUSAN_BEACHES[0];
+            renderBeachNav();
+
+            // Fly map to selected beach coordinates & open marker
+            if (mapInstance && mapMarkers[selectedBeach.id]) {
+                mapInstance.flyTo([selectedBeach.lat, selectedBeach.lng], 13, { duration: 1.2 });
+                mapMarkers[selectedBeach.id].openPopup();
+            }
+
+            await fetchBeachData();
+        }
+
+        async function fetchBeachData(forceRefresh = false) {
+            const refreshIcon = document.getElementById('refreshIcon');
+            if (refreshIcon) refreshIcon.classList.add('fa-spin');
+
+            try {
+                if (forceRefresh) {
+                    delete beachDataCache[selectedBeach.id];
+                }
+                let data = beachDataCache[selectedBeach.id];
+                if (!data) {
+                    data = await window.fetchOpenMeteoData(selectedBeach.lat, selectedBeach.lng);
+                    beachDataCache[selectedBeach.id] = data;
+                }
+
+                updateUI(data);
+                updateMapPopupData(selectedBeach.id, data);
+            } catch (err) {
+                console.error('Failed to fetch beach weather data:', err);
+            } finally {
+                if (refreshIcon) refreshIcon.classList.remove('fa-spin');
+            }
+        }
+
+        function computeActivityScores(weather, marine) {
+            const temp = weather.current.temperature_2m;
+            const wind = weather.current.wind_speed_10m;
+            const wave = marine?.current?.wave_height || 0.5;
+            const code = weather.current.weather_code;
+
+            let swimStatus = 'Great for Swimming';
+            let swimScore = '9/10';
+
+            if (wave > 1.8 || wind > 30 || code >= 61) {
+                swimStatus = 'Caution High Waves/Wind';
+                swimScore = '3/10';
+            } else if (wave > 1.0 || temp < 18) {
+                swimStatus = 'Moderate Conditions';
+                swimScore = '6/10';
+            }
+
+            let surfScore = '5/10';
+            if (wave >= 1.0 && wave <= 2.2 && wind < 25) {
+                surfScore = '9/10 (Awesome)';
+            } else if (wave >= 0.6) {
+                surfScore = '7/10 (Decent)';
+            } else {
+                surfScore = '4/10 (Flat Waves)';
+            }
+
+            let sunsetScore = '8/10';
+            if (code <= 1) sunsetScore = '10/10 (Clear Sky)';
+            else if (code <= 3) sunsetScore = '7/10 (Partly Cloudy)';
+            else sunsetScore = '3/10 (Overcast/Rain)';
+
+            return { swimStatus, swimScore, surfScore, sunsetScore };
+        }
+
+        function updateUI(data) {
+            const { weather, marine } = data;
+            const current = weather.current;
+            const weatherInfo = getWeatherInfo(current.weather_code);
+
+            // Basic Info
+            document.getElementById('beachName').textContent = selectedBeach.name;
+            document.getElementById('beachKorean').textContent = selectedBeach.korean;
+            document.getElementById('beachDesc').textContent = selectedBeach.desc;
+            document.getElementById('lastUpdated').textContent = `Updated ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+
+            // Favorite star state
+            const isFav = favorites.includes(selectedBeach.id);
+            const favIcon = document.getElementById('favStarIcon');
+            favIcon.className = isFav ? 'fa-solid fa-star text-amber-300' : 'fa-regular fa-star text-white/70';
+
+            // Main Weather Spotlight
+            document.getElementById('currentTemp').textContent = Math.round(current.temperature_2m);
+            document.getElementById('weatherCondition').textContent = weatherInfo.desc;
+            document.getElementById('weatherIconLarge').innerHTML = `<i class="fa-solid ${weatherInfo.icon}"></i>`;
+
+            // Marine highlights
+            const waveH = marine?.current?.wave_height ? `${marine.current.wave_height.toFixed(1)} m` : '0.4 m';
+            const waveP = marine?.current?.wave_period ? `${Math.round(marine.current.wave_period)} s` : '5 s';
+            document.getElementById('waveHeightHighlight').textContent = waveH;
+            document.getElementById('wavePeriodHighlight').textContent = waveP;
+            document.getElementById('windSpeedHighlight').textContent = `${Math.round(current.wind_speed_10m)} km/h`;
+            
+            const currentUv = weather.hourly?.uv_index ? weather.hourly.uv_index[new Date().getHours()] || 3 : 4;
+            document.getElementById('uvHighlight').textContent = currentUv.toFixed(1);
+
+            // Compute Ratings
+            const scores = computeActivityScores(weather, marine);
+            document.getElementById('safetyStatus').textContent = scores.swimStatus;
+            document.getElementById('swimScore').textContent = scores.swimScore;
+            document.getElementById('surfScore').textContent = scores.surfScore;
+            document.getElementById('sunsetScore').textContent = scores.sunsetScore;
+
+            // Details Cards
+            document.getElementById('apparentTemp').textContent = `${Math.round(current.apparent_temperature)}°C`;
+            document.getElementById('tempDiff').textContent = `Actual: ${Math.round(current.temperature_2m)}°C`;
+
+            document.getElementById('windSpeed').textContent = `${Math.round(current.wind_speed_10m)} km/h`;
+            document.getElementById('windDirection').textContent = `Dir: ${current.wind_direction_10m}°`;
+
+            document.getElementById('rainAmount').textContent = `${current.precipitation || 0} mm`;
+            document.getElementById('humidityLevel').textContent = `Humidity: ${current.relative_humidity_2m}%`;
+
+            document.getElementById('waveHeight').textContent = waveH;
+            document.getElementById('wavePeriod').textContent = `Period: ${waveP}`;
+
+            // Beach Meta Tips
+            document.getElementById('metaDescription').textContent = selectedBeach.desc;
+            document.getElementById('metaSpecialty').textContent = selectedBeach.specialty;
+            document.getElementById('metaWaveType').textContent = selectedBeach.waveType;
+            document.getElementById('metaCoords').textContent = `${selectedBeach.lat.toFixed(3)}°N, ${selectedBeach.lng.toFixed(3)}°E`;
+
+            // Draw Charts & Hourly Items
+            renderHourlySection(weather, marine);
+            renderDailyForecast(weather);
+        }
+
+        function renderHourlySection(weather, marine) {
+            const slider = document.getElementById('hourlySlider');
+            const canvas = document.getElementById('hourlyCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const hourly = weather.hourly;
+            const marineHourly = marine?.hourly;
+            const currentHour = new Date().getHours();
+
+            // Render 24-hour horizontal cards
+            let sliderHTML = '';
+            const hoursToDisplay = 24;
+
+            for (let i = currentHour; i < currentHour + hoursToDisplay; i++) {
+                if (!hourly.time[i]) break;
+                const timeStr = new Date(hourly.time[i]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const temp = Math.round(hourly.temperature_2m[i]);
+                const code = hourly.weather_code[i];
+                const info = getWeatherInfo(code);
+                const wave = marineHourly?.wave_height ? marineHourly.wave_height[i]?.toFixed(1) : '0.4';
+
+                sliderHTML += `
+                    <div class="bg-slate-50 border border-slate-100 p-3 rounded-2xl flex-shrink-0 w-24 text-center space-y-2">
+                        <span class="text-[11px] font-semibold text-slate-400 block">${timeStr}</span>
+                        <div class="text-xl ${info.color} my-1"><i class="fa-solid ${info.icon}"></i></div>
+                        <span class="font-bold text-sm text-slate-800 block">${temp}°C</span>
+                        <span class="text-[10px] text-cyan-600 font-medium block"><i class="fa-solid fa-water text-[9px]"></i> ${wave}m</span>
+                    </div>
+                `;
+            }
+            slider.innerHTML = sliderHTML;
+
+            // Canvas drawing logic
+            const width = canvas.offsetWidth || 600;
+            const height = canvas.offsetHeight || 180;
+            canvas.width = width;
+            canvas.height = height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const sliceCount = 12;
+            const temps = hourly.temperature_2m.slice(currentHour, currentHour + sliceCount);
+            const waves = marineHourly?.wave_height ? marineHourly.wave_height.slice(currentHour, currentHour + sliceCount) : Array(sliceCount).fill(0.5);
+
+            if (temps.length < 2) return;
+
+            const minTemp = Math.min(...temps) - 2;
+            const maxTemp = Math.max(...temps) + 2;
+            const stepX = width / (sliceCount - 1);
+
+            // Draw Temp Line (Cyan)
+            ctx.beginPath();
+            ctx.strokeStyle = '#0ea5e9';
+            ctx.lineWidth = 3;
+            temps.forEach((t, index) => {
+                const x = index * stepX;
+                const y = height - ((t - minTemp) / (maxTemp - minTemp)) * (height - 40) - 20;
+                if (index === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Draw Temp Dots & Text
+            temps.forEach((t, index) => {
+                const x = index * stepX;
+                const y = height - ((t - minTemp) / (maxTemp - minTemp)) * (height - 40) - 20;
+
+                ctx.fillStyle = '#0284c7';
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#334155';
+                ctx.font = '10px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${Math.round(t)}°`, x, y - 8);
+            });
+
+            // Draw Wave Line (Indigo dashed)
+            ctx.beginPath();
+            ctx.setLineDash([4, 4]);
+            ctx.strokeStyle = '#6366f1';
+            ctx.lineWidth = 2;
+
+            waves.forEach((w, index) => {
+                const x = index * stepX;
+                const waveY = height - (w / 3.0) * (height - 50) - 15;
+                if (index === 0) ctx.moveTo(x, waveY);
+                else ctx.lineTo(x, waveY);
+            });
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function renderDailyForecast(weather) {
+            const daily = weather.daily;
+            const container = document.getElementById('dailyForecastList');
+            if (!daily || !daily.time) return;
+
+            let html = '';
+            for (let i = 0; i < daily.time.length; i++) {
+                const dateObj = new Date(daily.time[i]);
+                const dayName = i === 0 ? 'Today' : dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                const dateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+                const maxTemp = Math.round(daily.temperature_2m_max[i]);
+                const minTemp = Math.round(daily.temperature_2m_min[i]);
+                const code = daily.weather_code[i];
+                const info = getWeatherInfo(code);
+
+                html += `
+                    <div class="flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 transition border border-transparent hover:border-slate-100 text-xs">
+                        <div class="w-20">
+                            <span class="font-bold text-slate-800 block">${dayName}</span>
+                            <span class="text-[10px] text-slate-400">${dateStr}</span>
+                        </div>
+                        <div class="flex items-center gap-2 ${info.color}">
+                            <i class="fa-solid ${info.icon} text-base"></i>
+                            <span class="text-slate-600 font-medium">${info.desc}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-bold text-slate-800">${maxTemp}°</span>
+                            <span class="text-slate-400 ml-1">${minTemp}°</span>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function toggleFavoriteCurrent() {
+            const id = selectedBeach.id;
+            if (favorites.includes(id)) {
+                favorites = favorites.filter(item => item !== id);
+            } else {
+                favorites.push(id);
+            }
+            localStorage.setItem('busan_fav_beaches', JSON.stringify(favorites));
+            renderBeachNav();
+            updateUI(beachDataCache[id]);
+        }
+
+        async function toggleCompareModal() {
+            const modal = document.getElementById('compareModal');
+            const isHidden = modal.classList.contains('hidden');
+
+            if (isHidden) {
+                modal.classList.remove('hidden');
+                await populateCompareTable();
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        async function populateCompareTable() {
+            const tbody = document.getElementById('compareTableBody');
+            tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">Fetching Busan coastal data...</td></tr>`;
+
+            let rows = '';
+
+            for (const beach of BUSAN_BEACHES) {
+                let data = beachDataCache[beach.id];
+                if (!data) {
+                    data = await fetchOpenMeteoData(beach.lat, beach.lng);
+                    beachDataCache[beach.id] = data;
+                }
+
+                const current = data.weather.current;
+                const marine = data.marine?.current;
+                const info = getWeatherInfo(current.weather_code);
+                const scores = computeActivityScores(data.weather, data.marine);
+
+                rows += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 font-bold text-slate-800">
+                            ${beach.name}
+                            <span class="block text-[10px] text-slate-400 font-normal">${beach.korean}</span>
+                        </td>
+                        <td class="p-3 font-semibold">${Math.round(current.temperature_2m)}°C</td>
+                        <td class="p-3">
+                            <span class="inline-flex items-center gap-1.5 ${info.color}">
+                                <i class="fa-solid ${info.icon}"></i> ${info.desc}
+                            </span>
+                        </td>
+                        <td class="p-3 font-medium text-cyan-600">${marine?.wave_height ? marine.wave_height.toFixed(1) + ' m' : '0.4 m'}</td>
+                        <td class="p-3 text-slate-500">${Math.round(current.wind_speed_10m)} km/h</td>
+                        <td class="p-3">
+                            <span class="px-2 py-1 rounded-lg text-[10px] font-bold ${
+                                scores.swimScore.includes('9') || scores.swimScore.includes('10') 
+                                ? 'bg-emerald-100 text-emerald-700' 
+                                : 'bg-amber-100 text-amber-700'
+                            }">
+                                ${scores.swimStatus}
+                            </span>
+                        </td>
+                        <td class="p-3 text-right">
+                            <button onclick="selectBeach('${beach.id}'); toggleCompareModal();" class="px-3 py-1 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition">
+                                View
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            tbody.innerHTML = rows;
+        }
+
+        window.onload = function() {
+            renderBeachNav();
+            initMap();
+            fetchBeachData();
+
+            // Resize canvas listener
+            window.addEventListener('resize', () => {
+                if (beachDataCache[selectedBeach.id]) {
+                    renderHourlySection(beachDataCache[selectedBeach.id].weather, beachDataCache[selectedBeach.id].marine);
+                }
+            });
+        };
+    </script>
+</body>
+</html>
